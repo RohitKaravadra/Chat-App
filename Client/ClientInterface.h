@@ -18,8 +18,8 @@ enum PanelFlags
 
 class ClientInterface
 {
-	const int width = 1280;
-	const int height = 720;
+	const int width = 500;
+	const int height = 500;
 
 	const char* host = "127.0.0.1"; // Server IP address
 	unsigned int port = 65432;

@@ -107,6 +107,7 @@ public:
 
 		auto sendTo = userData.begin();
 		std::advance(sendTo, to);
+		sendTo->second.second += "\nYou : " + msg; // add own message to chat
 		Message data(myId, sendTo->first, msg);
 
 		mtx.unlock();
@@ -133,7 +134,7 @@ public:
 
 		mtx.lock();
 		userData.insert({ newUser.id, std::make_pair(newUser.name, "") });
-		userData[0].second += "\n " + newUser.name + " Joined";
+		userData[0].second += "\n" + newUser.name + " Joined :)";
 		mtx.unlock();
 	}
 
@@ -151,7 +152,7 @@ public:
 
 		mtx.lock();
 		userData.erase(newUser.id);
-		userData[0].second += "\n " + newUser.name + " Left";
+		userData[0].second += "\n" + newUser.name + " Left :(";
 		mtx.unlock();
 	}
 
@@ -164,12 +165,11 @@ public:
 			return;
 		}
 
-		bool iAmSender = msg.from == myId;								// check if i am the sender
-		int chat = msg.to == 0 ? 0 : iAmSender ? msg.to : msg.from;		// get chat index
+		if (msg.from == myId)
+			return;
 
-		userData[0].second += "\n" +
-			(iAmSender ? "You" : userData[msg.from].first)
-			+ " : " + msg.data;
+		int chat = msg.to == 0 ? 0 : msg.from;
+		userData[chat].second += "\n" + userData[msg.from].first + " : " + msg.data;
 	}
 
 	// callback when a information is received

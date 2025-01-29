@@ -128,21 +128,18 @@ public:
 		mtx.unlock();
 	}
 
-	void processSendData(int _to, std::string _data)
-	{
-		mtx.lock();
-		if (_to == 0)	forwardToAll(_data);
-		else			forward(_to, _data);
-		mtx.unlock();
-	}
-
 	void sendMessageThread()
 	{
 		std::pair<SOCKET, std::string> data;
 		while (running)
 		{
 			if (sendQueue.dequeue(data))
-				sendInfo(data.first, data.second);
+			{
+				mtx.lock();
+				if (data.first == 0)	forwardToAll(data.second);
+				else					forward(data.first, data.second);
+				mtx.unlock();
+			}
 		}
 	}
 
@@ -166,7 +163,7 @@ public:
 		std::cout << "Forwarding : " << _data << std::endl;
 		for (auto c = clients.begin(); c != clients.end(); c++)
 			if (c->second.id == _id)
-				sendQueue.enqueue(std::make_pair(c->first, _data));
+				sendInfo(c->first, _data);
 	}
 
 	void forwardToAll(std::string _data)
@@ -174,7 +171,7 @@ public:
 		std::cout << "Forwarding to all : " << _data << std::endl;
 
 		for (auto c = clients.begin(); c != clients.end(); c++)
-			sendQueue.enqueue(std::make_pair(c->first, _data));
+			sendInfo(c->first, _data);
 	}
 
 	~Server()
