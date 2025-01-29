@@ -66,6 +66,9 @@
     <ClInclude Include="ClientInterface.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="NetworkData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ClientMain.cpp">

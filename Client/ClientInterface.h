@@ -2,6 +2,7 @@
 #include "client.h"
 #include <thread>
 #include "GUI.h"
+#include <algorithm>
 
 enum PanelFlags
 {
@@ -29,31 +30,14 @@ class ClientInterface
 	std::string inputMsg;
 
 	int selectedUser = 0;
-	std::vector<std::string> user;
-	std::vector<std::vector<std::string>> chat;
 public:
 
 	void create()
 	{
 		canvas = new GUIWindow(width, height, "Client");
 
-		updateUsers();
-		updateChat();
-
 		if (InitWinSock())
 			if (client.create());
-	}
-
-	void updateUsers()
-	{
-		for (int i = 0; i < 10; i++)
-			user.emplace_back("User " + std::to_string(i));
-	}
-
-	void updateChat()
-	{
-		for (int i = 0; i < 10; i++)
-			chat.emplace_back(std::vector<std::string>());
 	}
 
 	void OnSend()
@@ -61,9 +45,8 @@ public:
 		if (strlen(inputMsg.c_str()) > 0)
 		{
 			// The button was pressed, process the input string
-			if (client.send(inputMsg, selectedUser))
-				chat[selectedUser].emplace_back("You : " + inputMsg);
-			inputMsg.clear();
+			if (client.sendMessage(inputMsg, selectedUser))
+				inputMsg.clear();
 		}
 	}
 
@@ -100,12 +83,8 @@ public:
 			ImGui::SetWindowSize(ImVec2(width * 2 / 3, height - 50));
 			ImGui::SetWindowPos(ImVec2(width * 1 / 3, 0));
 
-			for (int i = 0; i < chat.size(); i++)
-			{
-				if (selectedUser == i)
-					for (int j = 0; j < chat[i].size(); j++)
-						ImGui::TextWrapped(chat[i][j].c_str());
-			}
+			selectedUser = std::clamp(selectedUser, 0, client.getTotalUsers());
+			ImGui::TextWrapped(client.getData(selectedUser).second.c_str());
 
 			ImGui::End();
 		}
@@ -118,8 +97,9 @@ public:
 			ImGui::SetWindowSize(ImVec2(width * 1 / 3, height));
 			ImGui::SetWindowPos(ImVec2(0, 0));
 
-			for (int i = 0; i < user.size(); i++)
-				if (ImGui::Selectable(user[i].c_str(), selectedUser == i))
+			int total = client.getTotalUsers();
+			for (int i = 0; i < total; i++)
+				if (ImGui::Selectable(client.getData(i).first.c_str(), selectedUser == i))
 					selectedUser = i;
 
 			ImGui::End();

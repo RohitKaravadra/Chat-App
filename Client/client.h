@@ -1,133 +1,250 @@
 #pragma once
 #include "Networking.h"
+#include "NetworkData.h"
 #include "MessageQueue.h"
+#include <unordered_map>
 
 class Client :public SocketBase
 {
-	MsgQueue sendQueue;
+	MsgQueue<std::string> sendQueue;
 
-	std::thread* sendThread;
-	std::thread* recvThread;
+	std::thread* sendThread;	// sending thread
+	std::thread* recvThread;	// recving thread
 
-	std::mutex recvMtx;
+	std::unordered_map<int,
+		std::pair<std::string, std::string>> userData;	// user data contains <userId, <username, userchat>>
+	std::mutex mtx;										// mutex to protect userData
 
-	std::vector<User> users;
-	std::vector<std::vector<std::string>> userChats;
-
-	int myId;
+	int myId;					// this client id on server
 public:
-	std::string name;
+	std::string name;			// this client name
 
 	Client() = default;
 
+	// connect to server
+	// - host : ip address of server
+	// - port : port number of server
 	bool connect(std::string host, const unsigned int& port)
 	{
-		if (SocketBase::connectServer(host, port))
+		if (!SocketBase::connectServer(host, port))
+			return false;
+
+		connected = true;
+
+		std::string ctx;
+
+		// receive server context
+		if (!recvInfo(socketID, ctx))
 		{
-			connected = true;
-
-			if (setClientData())
-			{
-				sendThread = new std::thread(&Client::handleSendMessageThread, this);
-				return true;
-			}
+			std::cout << "Server Context failed" << std::endl;
+			disconnect();
+			return false;
 		}
-		return false;
-	}
 
-	bool setClientData()
-	{
-		if (sendMessage(socketID, name))
+		std::cout << "Server Context :- " << ctx << std::endl;
+
+		// decode server context
+		ServerContext sc;
+		if (!sc.decode(ctx))
 		{
-			std::string msg;
-			if (recvMessage(socketID, msg))
-			{
-				myId = std::stoi(msg);
-				return true;
-			}
+			std::cout << "Corrupted Server Context received" << std::endl;
+			disconnect();
+			return false;
 		}
-		return false;
-	}
 
-	bool send(std::string msg, int to = 0)
-	{
-		Message data(MessageType::message, myId, to, msg);
-		encodeMessage(data, msg);
-		std::cout << msg << std::endl;
-		sendQueue.enqueue(msg);
+		myId = sc.myId;
+		populateUsers(sc.clientList);
+
+		// send client sontext
+		ClientContext cc(name);
+		if (!sendInfo(socketID, cc.encode()))
+		{
+			std::cout << "Client context Not sent" << std::endl;
+			disconnect();
+			return false;
+		}
+
+		sendThread = new std::thread(&Client::sendInfoThread, this);
+		recvThread = new std::thread(&Client::recvInfoThread, this);
+
 		return true;
 	}
 
-	bool recv(std::string& out)
+	void populateUsers(std::vector<User>& users)
 	{
-		return connected = recvMessage(socketID, out);
+		mtx.lock();
+
+		userData.insert({ 0, std::make_pair("General", "") });
+		for (auto& u : users)
+		{
+			std::cout << u.name << std::endl;
+			userData.insert({ u.id, std::make_pair(u.name, "") });
+		}
+
+		mtx.unlock();
 	}
 
-	void OnMessageRecvd(std::string msg)
-	{
-		std::cout << msg << std::endl;
+	// recieve info from server
+	// out : recieved info
+	// return true if received successfully
+	bool recv(std::string& _out) {
+		return connected = recvInfo(socketID, _out);
+	}
 
-		Message data;
-		if (!decodeMessage(msg, data))
+	// send message to server
+	// msg : message to be send
+	// to : id of user to send message
+	// return true if send is successful
+	bool sendMessage(std::string msg, int to = 0)
+	{
+		if (to >= userData.size())
+		{
+			std::cout << "User Not Found. No message send to " << to << std::endl;
+			return false;
+		}
+
+		mtx.lock();
+
+		auto sendTo = userData.begin();
+		std::advance(sendTo, to);
+		Message data(myId, sendTo->first, msg);
+
+		mtx.unlock();
+
+		NetInfo newInfo(NetInfoType::message, data.encode());
+		sendQueue.enqueue(newInfo.encode());
+
+		std::cout << "Added to Send Queue - " << newInfo.data << std::endl;
+
+		return true;
+	}
+
+	void onUserJoined(const NetInfo& _info)
+	{
+		User newUser;
+		if (!newUser.decode(_info.data))
+		{
+			std::cout << "Client join information is corrupted" << std::endl;
+			return;
+		}
+
+		if (newUser.id == myId)
 			return;
 
-		std::lock_guard<std::mutex> lock(recvMtx);
-		if (data.type == MessageType::message)
-		{
-			for (int i = 0; i < users.size(); i++)
-				if (users[i].id == data.from)
-					userChats[i].emplace_back(users[i].name + " : " + data.data);
-		}
-		else
-		{
+		mtx.lock();
+		userData.insert({ newUser.id, std::make_pair(newUser.name, "") });
+		userData[0].second += "\n " + newUser.name + " Joined";
+		mtx.unlock();
+	}
 
+	void onUserExit(const NetInfo& _info)
+	{
+		User newUser;
+		if (!newUser.decode(_info.data))
+		{
+			std::cout << "Client exit information is corrupted" << std::endl;
+			return;
+		}
+
+		if (newUser.id == myId)
+			return;
+
+		mtx.lock();
+		userData.erase(newUser.id);
+		userData[0].second += "\n " + newUser.name + " Left";
+		mtx.unlock();
+	}
+
+	void onMsgRecvd(const NetInfo& _info)
+	{
+		Message msg;
+		if (!msg.decode(_info.data))
+		{
+			std::cout << "Message is corrupted" << std::endl;
+			return;
+		}
+
+		bool iAmSender = msg.from == myId;								// check if i am the sender
+		int chat = msg.to == 0 ? 0 : iAmSender ? msg.to : msg.from;		// get chat index
+
+		userData[0].second += "\n" +
+			(iAmSender ? "You" : userData[msg.from].first)
+			+ " : " + msg.data;
+	}
+
+	// callback when a information is received
+	// process information according to type
+	// info : received information
+	void onInfoRecvd(std::string _info)
+	{
+		std::cout << _info << std::endl;
+		NetInfo newInfo;
+		if (!newInfo.decode(_info))
+		{
+			std::cout << "Information received is corrupted" << std::endl;
+			return;
+		}
+
+		std::cout << "Received -> " << _info << std::endl;
+
+		switch (newInfo.type)
+		{
+		case NetInfoType::clientJoined: onUserJoined(newInfo);
+			break;
+		case NetInfoType::clientLeft: onUserExit(newInfo);
+			break;
+		case NetInfoType::message: onMsgRecvd(newInfo);
+			break;
 		}
 	}
 
-	void handleSendMessageThread()
+	void sendInfoThread()
 	{
 		std::string msg;
 		while (connected)
 		{
 			if (sendQueue.dequeue(msg))
-				connected = sendMessage(socketID, msg);
+				connected = sendInfo(socketID, msg);
 		}
 
 		std::cout << "Send Thread Closed" << std::endl;
 	}
 
-	void handleRecvMessageThread()
+	void recvInfoThread()
 	{
+		std::string msg;
 		while (connected)
 		{
-			std::string msg;
 			if (recv(msg))
-				OnMessageRecvd(msg);
+				onInfoRecvd(msg);
 		}
 
 		std::cout << "Recieve Thread Closed" << std::endl;
 	}
 
-	std::vector<std::string> getChat(int i) {
-		std::lock_guard<std::mutex> lock(recvMtx);
-		return userChats[i];
-	}
+	std::pair<std::string, std::string> getData(int i) {
+		std::lock_guard<std::mutex> lock(mtx);
 
-	User getUser(int i) {
-		std::lock_guard<std::mutex> lock(recvMtx);
-		return users[i];
+		if (i < userData.size())
+		{
+			auto p = userData.begin();
+			std::advance(p, i);
+			return p->second;
+		}
+		else
+			return std::make_pair("Unknown", "");
 	}
 
 	int getTotalUsers() {
-		std::lock_guard<std::mutex> lock(recvMtx);
-		return users.size();
+		std::lock_guard<std::mutex> lock(mtx);
+		return userData.size();
 	}
 
 	bool disconnect()
 	{
 		if (connected)
 		{
-			sendMessage(socketID, NETWORK_EXIT);
+			sendInfo(socketID, NETWORK_EXIT);
 			connected = false;
 			return true;
 		}

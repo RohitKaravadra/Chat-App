@@ -1,27 +1,26 @@
 #pragma once
+
 #include "../Client/Networking.h"
+#include "../Client/MessageQueue.h"
+#include "../Client/NetworkData.h"
+
 #include <vector>
 #include <thread>
 #include <mutex>
+#include <unordered_map>
 
 static unsigned int USER_ID = 1; // 0 is reserved for all chat
-
-struct Client {
-	User user;
-	std::string ip;
-	SOCKET socketID;
-
-	bool operator==(const Client& c) {
-		return c.socketID == socketID;
-	}
-};
 
 static unsigned int GenereateID() { return USER_ID++; }
 
 class Server :public SocketBase
 {
+	MsgQueue<std::pair<SOCKET, std::string>> sendQueue;
+
+	std::thread* sendThread;
 	std::vector<std::thread*> clientThreads;
-	std::vector<Client> clients;
+
+	std::unordered_map<SOCKET, User> clients;
 
 	std::atomic<bool> running;
 	std::mutex mtx;
@@ -33,93 +32,162 @@ public:
 	}
 
 	bool start() {
-		return running = SocketBase::startServer();
+		running = SocketBase::startServer();
+		if (running)
+			sendThread = new std::thread(&Server::sendMessageThread, this);
+		return running;
 	}
 
-	bool OnUserJoinded(Client& client)
+	std::vector<User> getUsers()
 	{
-		// receive user name
-		if (recvMessage(client.socketID, client.user.name))
+		std::vector<User> users;
+		for (auto& c : clients)
+			users.emplace_back(c.second);
+		return users;
+	}
+
+	void handleClient(SOCKET socketID)
+	{
+		//context exchange
+		int id = GenereateID();
+
+		// send server context
+
+		mtx.lock();
+		ServerContext sc(id, getUsers());
+		mtx.unlock();
+
+		if (!sendInfo(socketID, sc.encode()))
 		{
-			client.user.id = GenereateID();			// generate unique userid
-
-			// send generated user id
-			if (sendMessage(client.socketID, std::to_string(client.user.id)))
-			{
-				std::lock_guard<std::mutex> lock(mtx);
-
-				clients.emplace_back(client);
-				std::cout << client.user.name << " joined." << std::endl;
-
-				return true;
-			}
+			std::cout << "Server context not send" << std::endl;
+			return;
 		}
 
-		return false;
-	}
+		// get client context
+		std::string info;
+		if (!recvInfo(socketID, info))
+		{
+			std::cout << "Client context not received" << std::endl;
+			return;
+		}
 
-	void handleClient(Client client)
-	{
+		//update clients
+		ClientContext cc;
+		if (!cc.decode(info))
+		{
+			std::cout << "Client context is corrupted" << std::endl;
+			return;
+		}
+
+		mtx.lock();
+		clients.insert({ socketID,User(id, cc.name) });
+		sendQueue.enqueue(std::make_pair(0, NetInfo(NetInfoType::clientJoined, clients[socketID].encode()).encode()));
+		mtx.unlock();
+
+		std::cout << cc.name << " Joined " << std::endl;
+
+		//message loop
+		NetInfo netInfo;
 		while (running)
 		{
-			std::string msg;
-			if (recvMessage(client.socketID, msg))
+			if (recvInfo(socketID, info))
 			{
-				if (msg == NETWORK_EXIT)
+				if (info == NETWORK_EXIT)
 					break;
 
-				Message data;
-				if (decodeMessage(msg, data))
+				if (!netInfo.decode(info))
 				{
-					// peocess message
-					// forward message
-					std::cout << msg << std::endl;
+					std::cout << "Corrupted info received from " << clients[socketID].name << std::endl;
+					continue;
 				}
+
+				std::cout << "Received -> " << netInfo.data << std::endl;
+				if (netInfo.type == NetInfoType::message)
+				{
+					Message msg;
+					if (!msg.decode(netInfo.data))
+					{
+						std::cout << "Corrupted message received from " << clients[socketID].name << std::endl;
+						continue;
+					}
+
+					sendQueue.enqueue(std::make_pair(msg.to, info));
+				}
+				std::cout << "Received " << toString(netInfo.type) << " -> " << info << std::endl;
 			}
 			else
 				break;
 		}
 
-		std::cout << client.user.name << " left." << std::endl;
-		closesocket(client.socketID);
+		std::cout << clients[socketID].name << " left." << std::endl;
+		closesocket(socketID);
 
-		std::lock_guard<std::mutex> lock(mtx);
-		clients.erase(std::find(clients.begin(), clients.end(), client)); // remove client
+		mtx.lock();
+		sendQueue.enqueue(std::make_pair(0, NetInfo(NetInfoType::clientLeft, clients[socketID].encode()).encode()));
+		clients.erase(socketID);
+		mtx.unlock();
 	}
 
-	Client accept()
+	void processSendData(int _to, std::string _data)
 	{
-		Client client;
-
-		if (SocketBase::acceptClient(client.socketID, client.ip))
-			if (OnUserJoinded(client))
-				clientThreads.emplace_back(new std::thread(&Server::handleClient, this, client));
-
-		return client;
+		mtx.lock();
+		if (_to == 0)	forwardToAll(_data);
+		else			forward(_to, _data);
+		mtx.unlock();
 	}
 
-	bool forwardMsg(const Client& c, std::string msg)
+	void sendMessageThread()
 	{
-		return sendMessage(c.socketID, msg);
+		std::pair<SOCKET, std::string> data;
+		while (running)
+		{
+			if (sendQueue.dequeue(data))
+				sendInfo(data.first, data.second);
+		}
 	}
 
-	bool forwardMsgAll(std::string msg)
+	bool accept()
 	{
-		std::lock_guard<std::mutex> lock(mtx);
+		SOCKET sock;
+		std::string ip;
+		User user;
 
-		for (int i = 0; i < clients.size(); i++)
-			sendMessage(clients[i].socketID, msg);
-		return true;
+		if (SocketBase::acceptClient(sock, ip))
+		{
+			clientThreads.emplace_back(new std::thread(&Server::handleClient, this, sock));
+			return true;
+		}
+
+		return false;
+	}
+
+	void forward(const int& _id, std::string _data)
+	{
+		std::cout << "Forwarding : " << _data << std::endl;
+		for (auto c = clients.begin(); c != clients.end(); c++)
+			if (c->second.id == _id)
+				sendQueue.enqueue(std::make_pair(c->first, _data));
+	}
+
+	void forwardToAll(std::string _data)
+	{
+		std::cout << "Forwarding to all : " << _data << std::endl;
+
+		for (auto c = clients.begin(); c != clients.end(); c++)
+			sendQueue.enqueue(std::make_pair(c->first, _data));
 	}
 
 	~Server()
 	{
 		running = false;
+
 		for (int i = 0; i < clientThreads.size(); i++)
 		{
 			clientThreads[i]->join();
 			delete clientThreads[i];
 		}
+
+		sendThread->join();
 
 		std::cout << "Server Cleaned" << std::endl;
 	}

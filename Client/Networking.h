@@ -3,42 +3,10 @@
 #include <ws2tcpip.h>
 #include <iostream>
 #include <string>
-#include <sstream>
 
 #pragma comment(lib, "ws2_32.lib")
 
-constexpr auto DELIMITER = ':';;
 const std::string NETWORK_EXIT = "!##!##!";
-
-// struct to store user data
-struct User {
-	unsigned int id;
-	std::string name;
-
-	User() = default;
-	User(unsigned int _id, std::string _name) :id(_id), name(_name) {}
-};
-
-// enum for seperating messages and information in data
-enum MessageType
-{
-	clientInfo = 0,
-	message = 1
-};
-
-// struct to store message and its header
-struct Message
-{
-	MessageType type;
-	int from;
-	int to;
-	std::string data;
-
-	Message() = default;
-	Message(MessageType _type, int _from, int _to, std::string _data) :
-		type(_type), from(_from), to(_to), data(_data) {
-	}
-};
 
 class SocketBase
 {
@@ -207,10 +175,10 @@ static void CleanWinSock()
 }
 
 // send data from given socket
-static bool sendData(SOCKET socketID, const char* data, const unsigned int& size)
+static bool sendData(SOCKET socketID, const char* info, const unsigned int& size)
 {
 	// Send the sentence to the server
-	if (send(socketID, data, size, 0) == SOCKET_ERROR) {
+	if (send(socketID, info, size, 0) == SOCKET_ERROR) {
 		std::cerr << "Send failed with error: " << WSAGetLastError() << std::endl;
 		return false;
 	}
@@ -246,19 +214,19 @@ static bool recvData(SOCKET socketID, const unsigned int& bufferSize, std::strin
 	return false;
 }
 
-// receive message for the socket
+// receive information for the socket
 // - SOCKET : socket id of the socket
-// - out : received message
-static bool recvMessage(SOCKET socketID, std::string& out)
+// - out : received information
+static bool recvInfo(SOCKET _socketID, std::string& _out)
 {
 	std::string header;
-	if (recvData(socketID, 100, header))
+	if (recvData(_socketID, 100, header))
 	{
 		unsigned int size = std::stoi(header);
-		std::string msg;
-		if (recvData(socketID, size + 1, msg))
+		std::string info;
+		if (recvData(_socketID, size + 1, info))
 		{
-			out = msg;
+			_out = info;
 			return true;
 		}
 	}
@@ -266,55 +234,15 @@ static bool recvMessage(SOCKET socketID, std::string& out)
 	return false;
 }
 
-//send message for socker
+//send information for socker
 // - SOCKET : socket id of socket
-// - msg : message to be send
-static bool sendMessage(SOCKET socketID, std::string msg)
+// - msg : information to be send
+static bool sendInfo(SOCKET _socketID, std::string _msg)
 {
-	std::string size = std::to_string(msg.size());
-	if (sendData(socketID, size.c_str(), size.size()))
-		if (sendData(socketID, msg.c_str(), msg.size()))
+	std::string size = std::to_string(_msg.size());
+	if (sendData(_socketID, size.c_str(), size.size()))
+		if (sendData(_socketID, _msg.c_str(), _msg.size()))
 			return true;
 
-	return false;
-}
-
-// encode message to a string
-// msg : messsage to be encoded
-// out : encoded result in string
-// always return true
-static bool encodeMessage(const Message& msg, std::string& out)
-{
-	out = "";
-	out += std::to_string(msg.type) + DELIMITER;
-	out += std::to_string(msg.from) + DELIMITER;
-	out += std::to_string(msg.to) + DELIMITER;
-	out += msg.data;
-	return true;
-}
-
-// decode message from string
-// data : message in string format
-// msg : decoded message
-// returns true if decoding is successful
-static bool decodeMessage(std::string& data, Message& msg)
-{
-	std::stringstream st(data);
-	std::string in;
-	if (std::getline(st, in, DELIMITER))
-	{
-		msg.type = (MessageType)std::stoi(in);
-		if (std::getline(st, in, DELIMITER))
-		{
-			msg.from = std::stoi(in);
-			if (std::getline(st, in, DELIMITER))
-			{
-				msg.to = std::stoi(in);
-				getline(st, in);
-				msg.data = in;
-				return true;
-			}
-		}
-	}
 	return false;
 }

@@ -4,26 +4,28 @@
 #include <mutex>
 #include <vector>
 
+template<typename T>
 struct MsgNode {
 	MsgNode* next = nullptr;
-	std::string data;
-	MsgNode(std::string _data) :data(_data) {};
+	T info;
+	MsgNode(T _data) :info(_data) {};
 };
 
+template<typename T>
 class MsgQueue {
-	MsgNode* head;
-	MsgNode* tail;
+	MsgNode<T>* head;
+	MsgNode<T>* tail;
 	std::mutex mtx;
 public:
 	MsgQueue() {
 		head = tail = nullptr;
 	}
 
-	void enqueue(std::string _data) {
+	void enqueue(T _data) {
 
 		std::lock_guard<std::mutex> lock(mtx);
 
-		MsgNode* n = new MsgNode(_data);
+		MsgNode<T>* n = new MsgNode<T>(_data);
 		if (tail == nullptr)
 			head = tail = n;
 		else {
@@ -32,22 +34,13 @@ public:
 		}
 	}
 
-	void display() {
-		std::lock_guard<std::mutex> lock(mtx);
-
-		std::cout << "H->";
-		for (MsgNode* nptr = head; nptr != nullptr; nptr = nptr->next)
-			std::cout << nptr->data << '\t';
-		std::cout << "<-T" << std::endl;
-	}
-
-	bool dequeue(std::string& i) {
+	bool dequeue(T& i) {
 		if (head == nullptr) return false;
 
 		std::lock_guard<std::mutex> lock(mtx);
 
-		MsgNode* n = head;
-		i = n->data;
+		MsgNode<T>* n = head;
+		i = n->info;
 		if (head == tail) // check for final element
 			head = tail = nullptr;
 		else
@@ -61,23 +54,23 @@ public:
 		return head == nullptr;
 	}
 
-	bool dequeueAll(std::vector<std::string>& _all)
+	bool dequeueAll(std::vector<T>& _all)
 	{
 		if (head == nullptr) return false;
 
 		mtx.lock();
 
-		MsgNode* newHead = head;
+		MsgNode<T>* newHead = head;
 		head = tail = nullptr;
 
 		mtx.unlock();
 
 		while (newHead != nullptr)
 		{
-			std::string data = newHead->data;
-			_all.emplace_back(data);
+			T info = newHead->info;
+			_all.emplace_back(info);
 
-			MsgNode* node = newHead;
+			MsgNode<T>* node = newHead;
 			newHead = newHead->next;
 			delete node;
 		}
