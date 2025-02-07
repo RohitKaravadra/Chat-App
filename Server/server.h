@@ -80,11 +80,11 @@ public:
 		}
 
 		mtx.lock();
-		clients.insert({ socketID,User(id, cc.name) });
+		clients.insert({ socketID,User(id, cc.username) });
 		sendQueue.enqueue(std::make_pair(0, NetInfo(NetInfoType::clientJoined, clients[socketID].encode()).encode()));
 		mtx.unlock();
 
-		std::cout << cc.name << " Joined " << std::endl;
+		std::cout << cc.username << " Joined " << std::endl;
 
 		//message loop
 		NetInfo netInfo;
@@ -97,7 +97,7 @@ public:
 
 				if (!netInfo.decode(info))
 				{
-					std::cout << "Corrupted info received from " << clients[socketID].name << std::endl;
+					std::cout << "Corrupted info received from " << clients[socketID].username << std::endl;
 					continue;
 				}
 
@@ -107,7 +107,7 @@ public:
 					Message msg;
 					if (!msg.decode(netInfo.data))
 					{
-						std::cout << "Corrupted message received from " << clients[socketID].name << std::endl;
+						std::cout << "Corrupted message received from " << clients[socketID].username << std::endl;
 						continue;
 					}
 
@@ -119,7 +119,7 @@ public:
 				break;
 		}
 
-		std::cout << clients[socketID].name << " left." << std::endl;
+		std::cout << clients[socketID].username << " left." << std::endl;
 		closesocket(socketID);
 
 		mtx.lock();

@@ -215,8 +215,8 @@ static bool recvData(SOCKET socketID, const unsigned int& bufferSize, std::strin
 }
 
 // receive information for the socket
-// - SOCKET : socket id of the socket
-// - out : received information
+// - _socketID : socket id of the socket
+// - _out : received information
 static bool recvInfo(SOCKET _socketID, std::string& _out)
 {
 	std::string header;
@@ -235,8 +235,8 @@ static bool recvInfo(SOCKET _socketID, std::string& _out)
 }
 
 //send information for socker
-// - SOCKET : socket id of socket
-// - msg : information to be send
+// - _socketID : socket id of socket
+// - _msg : information to be send
 static bool sendInfo(SOCKET _socketID, std::string _msg)
 {
 	std::string size = std::to_string(_msg.size());

@@ -4,17 +4,19 @@
 #include <mutex>
 #include <vector>
 
-template<typename T>
-struct MsgNode {
-	MsgNode* next = nullptr;
-	T info;
-	MsgNode(T _data) :info(_data) {};
-};
 
 template<typename T>
 class MsgQueue {
-	MsgNode<T>* head;
-	MsgNode<T>* tail;
+
+	struct MsgNode {
+		MsgNode* next = nullptr;
+		T info;
+		MsgNode(T _data) :info(_data) {};
+	};
+
+	MsgNode* head;
+	MsgNode* tail;
+
 	std::mutex mtx;
 public:
 	MsgQueue() {
@@ -25,7 +27,7 @@ public:
 
 		std::lock_guard<std::mutex> lock(mtx);
 
-		MsgNode<T>* n = new MsgNode<T>(_data);
+		MsgNode* n = new MsgNode(_data);
 		if (tail == nullptr)
 			head = tail = n;
 		else {
@@ -39,7 +41,7 @@ public:
 
 		std::lock_guard<std::mutex> lock(mtx);
 
-		MsgNode<T>* n = head;
+		MsgNode* n = head;
 		i = n->info;
 		if (head == tail) // check for final element
 			head = tail = nullptr;
@@ -60,7 +62,7 @@ public:
 
 		mtx.lock();
 
-		MsgNode<T>* newHead = head;
+		MsgNode* newHead = head;
 		head = tail = nullptr;
 
 		mtx.unlock();
@@ -70,7 +72,7 @@ public:
 			T info = newHead->info;
 			_all.emplace_back(info);
 
-			MsgNode<T>* node = newHead;
+			MsgNode* node = newHead;
 			newHead = newHead->next;
 			delete node;
 		}
