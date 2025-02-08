@@ -69,6 +69,33 @@
     <ClInclude Include="NetworkData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="FMod\soundManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FMod\inc\fmod.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FMod\inc\fmod.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FMod\inc\fmod_codec.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FMod\inc\fmod_common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FMod\inc\fmod_dsp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FMod\inc\fmod_dsp_effects.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FMod\inc\fmod_errors.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FMod\inc\fmod_output.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ClientMain.cpp">
@@ -101,5 +128,16 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="imgui.ini" />
+    <None Include="FMod\inc\fmod.cs" />
+    <None Include="FMod\inc\fmod_dsp.cs" />
+    <None Include="FMod\inc\fmod_errors.cs" />
+    <None Include="FMod\lib\x64\fmod.dll" />
+    <None Include="FMod\lib\x64\fmodL.dll" />
+    <None Include="fmod.dll" />
+    <None Include="fmodL.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="FMod\lib\x64\fmod_vc.lib" />
+    <Library Include="FMod\lib\x64\fmodL_vc.lib" />
   </ItemGroup>
 </Project>

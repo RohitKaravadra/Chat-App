@@ -15,7 +15,7 @@ static unsigned int GenereateID() { return USER_ID++; }
 
 class Server :public SocketBase
 {
-	MsgQueue<std::pair<SOCKET, std::string>> sendQueue;
+	MsgQueue<std::pair<int, std::string>> sendQueue;
 
 	std::thread* sendThread;
 	std::vector<std::thread*> clientThreads;
@@ -130,7 +130,7 @@ public:
 
 	void sendMessageThread()
 	{
-		std::pair<SOCKET, std::string> data;
+		std::pair<int, std::string> data;
 		while (running)
 		{
 			if (sendQueue.dequeue(data))

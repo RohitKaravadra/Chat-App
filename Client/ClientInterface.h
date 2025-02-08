@@ -1,8 +1,12 @@
 #pragma once
-#include "client.h"
 #include <thread>
-#include "GUI.h"
 #include <algorithm>
+#include "client.h"
+#include "ImGui/GUI.h"
+#include "FMod/soundManager.h"
+
+const char* ping1Sound = "Sounds/ping1.wav";
+const char* ping2Sound = "Sounds/ping2.wav";
 
 enum PanelFlags
 {
@@ -27,6 +31,8 @@ class ClientInterface
 	Client client;
 	GUIWindow* canvas;
 
+	SoundManager soundManager;
+
 	std::string inputMsg;
 
 	int selectedUser = 0;
@@ -37,6 +43,9 @@ public:
 	void create()
 	{
 		canvas = new GUIWindow(width, height, "Client");
+
+		soundManager.load(ping1Sound);
+		soundManager.load(ping2Sound);
 
 		if (InitWinSock())
 			if (client.create());
@@ -50,6 +59,13 @@ public:
 			if (client.sendMessage(inputMsg, selectedUser))
 				inputMsg.clear();
 		}
+	}
+
+	void OnNewMessageReceived(int user) {
+		if (user == 0)
+			soundManager.play(ping1Sound);
+		else
+			soundManager.play(ping2Sound);
 	}
 
 	void LogInPanel()
@@ -119,6 +135,7 @@ public:
 			ImGui::SetWindowPos(ImVec2(0, 0));
 
 			ImGui::TextColored(ImVec4(1, 1, 0, 1), client.username.c_str());
+
 			int total = client.getTotalUsers();
 			for (int i = 0; i < total; i++)
 			{
@@ -174,6 +191,19 @@ public:
 		}
 	}
 
+	void playNotificationSound()
+	{
+		int chat = client.newMsgCheck();
+		if (chat == -1)
+			return;
+
+		std::cout << "New Message Check " << chat << std::endl;
+		if (chat == 0)
+			soundManager.play(ping1Sound);
+		else
+			soundManager.play(ping2Sound);
+	}
+
 	void UpdatePanels()
 	{
 		if (ImGui::Begin("Input", NULL, PanelFlags::plain))
@@ -189,6 +219,8 @@ public:
 			}
 			else
 				LogInPanel();
+
+			playNotificationSound();
 
 			ImGui::End();
 		}

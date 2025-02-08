@@ -73,19 +73,22 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)bin\$(ShortProjectName)\$(Platform)-$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)bin\temp\$(ShortProjectName)\$(Platform)-$(Configuration)\</IntDir>
-    <ExternalIncludePath>C:\Users\u5667101\Documents\CPP Codes\Networking\Client\imGui;$(ExternalIncludePath)</ExternalIncludePath>
+    <ExternalIncludePath>$(SolutionDir)Client\FMod\inc</ExternalIncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>$(SolutionDir)bin\$(ShortProjectName)\$(Platform)-$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)bin\temp\$(ShortProjectName)\$(Platform)-$(Configuration)\</IntDir>
+    <ExternalIncludePath>$(SolutionDir)Client\FMod\inc</ExternalIncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)bin\$(ShortProjectName)\$(Platform)-$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)bin\temp\$(ShortProjectName)\$(Platform)-$(Configuration)\</IntDir>
+    <ExternalIncludePath>$(SolutionDir)Client\FMod\inc</ExternalIncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)bin\$(ShortProjectName)\$(Platform)-$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)bin\temp\$(ShortProjectName)\$(Platform)-$(Configuration)\</IntDir>
+    <ExternalIncludePath>$(SolutionDir)Client\FMod\inc</ExternalIncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -97,6 +100,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(SolutionDir)Client\FMod\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -113,6 +117,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(SolutionDir)Client\FMod\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -126,6 +131,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(SolutionDir)Client\FMod\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -142,11 +148,20 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(SolutionDir)Client\FMod\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="client.h" />
     <ClInclude Include="ClientInterface.h" />
+    <ClInclude Include="FMod\inc\fmod.h" />
+    <ClInclude Include="FMod\inc\fmod.hpp" />
+    <ClInclude Include="FMod\inc\fmod_codec.h" />
+    <ClInclude Include="FMod\inc\fmod_common.h" />
+    <ClInclude Include="FMod\inc\fmod_dsp.h" />
+    <ClInclude Include="FMod\inc\fmod_dsp_effects.h" />
+    <ClInclude Include="FMod\inc\fmod_errors.h" />
+    <ClInclude Include="FMod\inc\fmod_output.h" />
     <ClInclude Include="imGui\GamesEngineeringBase.h" />
     <ClInclude Include="imGui\GUI.h" />
     <ClInclude Include="imGui\imconfig.h" />
@@ -161,6 +176,7 @@
     <ClInclude Include="MessageQueue.h" />
     <ClInclude Include="NetworkData.h" />
     <ClInclude Include="Networking.h" />
+    <ClInclude Include="FMod\soundManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ClientMain.cpp" />
@@ -174,7 +190,18 @@
     <ClCompile Include="imGui\imgui_widgets.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="fmod.dll" />
+    <None Include="fmodL.dll" />
+    <None Include="FMod\inc\fmod.cs" />
+    <None Include="FMod\inc\fmod_dsp.cs" />
+    <None Include="FMod\inc\fmod_errors.cs" />
+    <None Include="FMod\lib\x64\fmod.dll" />
+    <None Include="FMod\lib\x64\fmodL.dll" />
     <None Include="imgui.ini" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="FMod\lib\x64\fmodL_vc.lib" />
+    <Library Include="FMod\lib\x64\fmod_vc.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

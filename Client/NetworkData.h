@@ -3,7 +3,7 @@
 #include <sstream>
 #include <vector>
 
-constexpr auto DELIMITER = '^';;
+constexpr auto DELIMITER = '^';
 
 // enum for seperating messages and information in data
 enum NetInfoType

@@ -27,10 +27,14 @@ class Client :public SocketBase
 	std::mutex mtx;						// mutex to protect userData
 
 	int myId;						// this client id on server
+
+	std::atomic<int> newMessageIn;	// to play notification sound
 public:
 	std::string username;			// this client name
 
-	Client() = default;
+	Client() {
+		newMessageIn.store(-1);
+	}
 
 	// connect to server
 	// - host : ip address of server
@@ -202,6 +206,8 @@ public:
 			userData[msg.from].username + "  : " + msg.data;	// add message to the chat 
 
 		userData[chat].newMsgs += 1;							// add new message notification counter
+
+		newMessageIn.store(chat);
 	}
 
 	// callback to handle received information
@@ -300,6 +306,11 @@ public:
 		}
 		else
 			return 0;
+	}
+
+	int newMsgCheck() {
+		int chat = newMessageIn.exchange(-1);
+		return chat;
 	}
 
 	// returns  total users connected to server
