@@ -257,8 +257,8 @@ namespace GamesEngineeringBase
 				// Configure windowed mode settings
 				width = window_width;
 				height = window_height;
-				//style = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
-				style = (WS_OVERLAPPEDWINDOW & ~WS_THICKFRAME & ~WS_MAXIMIZEBOX) | WS_VISIBLE;
+				style = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+				//style = (WS_OVERLAPPEDWINDOW & ~WS_THICKFRAME & ~WS_MAXIMIZEBOX) | WS_VISIBLE; // for no scaling 
 			}
 
 			// Set the process DPI awareness for proper scaling

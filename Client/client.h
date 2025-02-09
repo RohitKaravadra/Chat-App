@@ -269,7 +269,7 @@ public:
 
 		if (i < userData.size())
 		{
-			auto p = userData.begin();
+			auto p = userData.begin();							// advance pointer to given index
 			std::advance(p, i);
 			p->second.newMsgs = 0;								// set new message notification counter 0
 			return p->second.chat;
@@ -300,7 +300,7 @@ public:
 
 		if (i < userData.size())
 		{
-			auto p = userData.begin();
+			auto p = userData.begin();							// advance pointer to given index
 			std::advance(p, i);
 			return p->second.newMsgs;
 		}
@@ -326,7 +326,7 @@ public:
 		if (connected)
 		{
 			sendInfo(socketID, NETWORK_EXIT);					// send disconnection message to server
-			connected = false;
+			connected = false;									// set connection to false
 			return true;
 		}
 

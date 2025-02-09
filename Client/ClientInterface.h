@@ -8,6 +8,7 @@
 const char* ping1Sound = "Sounds/ping1.wav";
 const char* ping2Sound = "Sounds/ping2.wav";
 
+// ImGui window flags for creating panels
 enum PanelFlags
 {
 	plain = ImGuiWindowFlags_NoTitleBar |
@@ -20,26 +21,28 @@ enum PanelFlags
 	ImGuiWindowFlags_NoCollapse,
 };
 
+// holds client GUI
 class ClientInterface
 {
-	const int width = 700;
-	const int height = 500;
+	const int width = 700;		// width for main window
+	const int height = 500;		// height for main window
 
 	const char* host = "127.0.0.1"; // Server IP address
-	unsigned int port = 65432;
+	unsigned int port = 65432;		// server port
 
-	Client client;
-	GUIWindow* canvas;
+	Client client;				// client object
+	GUIWindow* canvas;			// ImGui window wrapper object
 
-	SoundManager soundManager;
+	SoundManager soundManager;	// FMOD sound manager object
 
-	std::string inputMsg;
+	std::string inputMsg;		// input field message 
 
-	int selectedUser = 0;
-	bool scrollEnd = false;
+	int selectedUser = 0;		// current selected user to chat with
+	bool scrollEnd = false;		// to check if to scroll window to latest data
 
 public:
 
+	// create client user interface
 	void create()
 	{
 		canvas = new GUIWindow(width, height, "Client");
@@ -51,6 +54,7 @@ public:
 			if (client.create());
 	}
 
+	// send message to selected user
 	void OnSend()
 	{
 		if (strlen(inputMsg.c_str()) > 0)
@@ -61,29 +65,26 @@ public:
 		}
 	}
 
-	void OnNewMessageReceived(int user) {
-		if (user == 0)
-			soundManager.play(ping1Sound);
-		else
-			soundManager.play(ping2Sound);
-	}
-
+	// draws login panel on window and keeps focus
 	void LogInPanel()
 	{
-		ImVec2 size = ImVec2(300, 200);
-		static char username[20];
+		ImVec2 size = ImVec2(300, 200);			// size of this window
+		static char username[20];				// username input field
 
-		ImGui::SetNextWindowFocus();
+		ImGui::SetNextWindowFocus();			// keep focus on this window
 		if (ImGui::Begin("Log In", NULL, PanelFlags::noMoveResize))
 		{
 			ImGui::SetWindowSize(size);
 			ImGui::SetWindowPos(ImVec2((width - size.x) / 2, (height - size.y) / 2));
 
+			// input name text
 			ImGui::SetCursorPos(ImVec2(50, 50));
 			ImGui::Text("Enter Your Username");
+			ImGui::Text("Name must be > 3 characters");
 
 			// Create an input text field
-			ImGui::SetCursorPos(ImVec2(50, 80));
+			ImGui::SetCursorPos(ImVec2(50, 100));
+			// pressing enter accepts username
 			if (ImGui::InputText("##Name ", username, 20, ImGuiInputTextFlags_CharsNoBlank | ImGuiInputTextFlags_EnterReturnsTrue))
 			{
 				client.username = std::string(username);
@@ -92,7 +93,8 @@ public:
 			}
 			else
 			{
-				ImGui::SetCursorPos(ImVec2(100, 125));
+				// if enter not pressed check for send button press
+				ImGui::SetCursorPos(ImVec2(100, 135));
 
 				// Create a button
 				if (ImGui::Button("Log In", ImVec2(100, 50)) && std::string(username).size() > 3)
@@ -107,17 +109,18 @@ public:
 		}
 	}
 
+	// draws chat panel and populates current users chat data
 	void UpdateChatPanel()
 	{
 		if (ImGui::Begin("Chat", NULL, PanelFlags::noMoveResize))
 		{
-			ImGui::SetWindowSize(ImVec2(width * 2 / 3, height - 50));
-			ImGui::SetWindowPos(ImVec2(width * 1 / 3, 0));
+			ImGui::SetWindowSize(ImVec2(width * 2 / 3, height - 50));	// 2/3 of windows size
+			ImGui::SetWindowPos(ImVec2(width * 1 / 3, 0));				// position on right side of parent window
 
-			selectedUser = std::clamp(selectedUser, 0, client.getTotalUsers());
-			ImGui::TextWrapped(client.getChat(selectedUser).c_str());
+			selectedUser = std::clamp(selectedUser, 0, client.getTotalUsers());	// get selected users username
+			ImGui::TextWrapped(client.getChat(selectedUser).c_str());			// get and set selected users chat
 
-			if (scrollEnd)
+			if (scrollEnd)		// check for scroll to bottom
 			{
 				scrollEnd = false;
 				ImGui::SetScrollHereY(1.0f);
@@ -127,6 +130,7 @@ public:
 		}
 	}
 
+	// draw and populate connected users on user panel
 	void UpdateUserPanel()
 	{
 		if (ImGui::Begin("Users", NULL, PanelFlags::noMoveResize))
@@ -134,13 +138,15 @@ public:
 			ImGui::SetWindowSize(ImVec2(width * 1 / 3, height));
 			ImGui::SetWindowPos(ImVec2(0, 0));
 
+			// set text color to yellow for this client username
 			ImGui::TextColored(ImVec4(1, 1, 0, 1), client.username.c_str());
 
+			// populate all users as selectable
 			int total = client.getTotalUsers();
 			for (int i = 0; i < total; i++)
 			{
 				// update usernames
-				if (ImGui::Selectable(client.getUsername(i).c_str(), selectedUser == i, 0))
+				if (ImGui::Selectable(client.getUsername(i).c_str(), selectedUser == i, 0))	// if new user selected, update current user and set scroll to bottom true
 				{
 					selectedUser = i;
 					scrollEnd = true;
@@ -160,22 +166,23 @@ public:
 		}
 	}
 
-
+	// draw and populate input panel data
 	void UpdateInputPanel()
 	{
-		int h = 50;
+		int h = 50;		// height for input panel
 
 		if (ImGui::Begin("Input", NULL, PanelFlags::plain))
 		{
 			ImGui::SetWindowSize(ImVec2(width * 2 / 3, h));
-			ImGui::SetWindowPos(ImVec2(width * 1 / 3, height - h));
+			ImGui::SetWindowPos(ImVec2(width * 1 / 3, height - h));	// position input panel to bottom of parent
 
 			// Create an input text field
+			// pressing enter accepts input and sends message to selected user
 			if (ImGui::InputText(" ", &inputMsg, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_ElideLeft))
 			{
 				OnSend();
-				ImGui::SetKeyboardFocusHere(-1);
-				scrollEnd = true;
+				ImGui::SetKeyboardFocusHere(-1);	// keep focus to input field if enter is pressed
+				scrollEnd = true;					// scroll to bottom when sending message
 			}
 
 			ImGui::SameLine();
@@ -184,26 +191,27 @@ public:
 			if (ImGui::Button("Send", ImVec2(100, h - 10)))
 			{
 				OnSend();
-				scrollEnd = true;
+				scrollEnd = true;					// scroll to bottom when sending message
 			}
 
 			ImGui::End();
 		}
 	}
 
+	// check and play notification sounds
 	void playNotificationSound()
 	{
 		int chat = client.newMsgCheck();
 		if (chat == -1)
 			return;
 
-		std::cout << "New Message Check " << chat << std::endl;
-		if (chat == 0)
+		if (chat == 0)						// 0 for public message
 			soundManager.play(ping1Sound);
-		else
+		else								// anything else for private message
 			soundManager.play(ping2Sound);
 	}
 
+	// draw and populate all panels
 	void UpdatePanels()
 	{
 		if (ImGui::Begin("Input", NULL, PanelFlags::plain))
@@ -211,16 +219,16 @@ public:
 			ImGui::SetWindowSize(ImVec2(width, height));
 			ImGui::SetWindowPos(ImVec2(0, 0));
 
-			if (client.isConnected())
+			if (client.isConnected())		// if draw and populate user, chat and input panel
 			{
 				UpdateUserPanel();
 				UpdateChatPanel();
 				UpdateInputPanel();
-			}
-			else
+			}	
+			else							// if not connected draw login panel
 				LogInPanel();
 
-			playNotificationSound();
+			playNotificationSound();		// check for notification if any
 
 			ImGui::End();
 		}
