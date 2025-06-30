@@ -101,7 +101,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)Client\FMod\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)Client\FMod\lib\arm64lib;$(SolutionDir)Client\FMod\lib\x86lib;$(SolutionDir)Client\FMod\lib\x64lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -119,7 +119,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)Client\FMod\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)Client\FMod\lib\arm64lib;$(SolutionDir)Client\FMod\lib\x86lib;$(SolutionDir)Client\FMod\lib\x64lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -133,7 +133,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)Client\FMod\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)Client\FMod\lib\arm64lib;$(SolutionDir)Client\FMod\lib\x86lib;$(SolutionDir)Client\FMod\lib\x64lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -151,7 +151,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)Client\FMod\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)Client\FMod\lib\arm64lib;$(SolutionDir)Client\FMod\lib\x86lib;$(SolutionDir)Client\FMod\lib\x64lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -198,13 +198,13 @@
     <None Include="FMod\inc\fmod.cs" />
     <None Include="FMod\inc\fmod_dsp.cs" />
     <None Include="FMod\inc\fmod_errors.cs" />
-    <None Include="FMod\lib\x64\fmod.dll" />
-    <None Include="FMod\lib\x64\fmodL.dll" />
+    <None Include="FMod\lib\x64lib\fmod.dll" />
+    <None Include="FMod\lib\x64lib\fmodL.dll" />
     <None Include="imgui.ini" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="FMod\lib\x64\fmodL_vc.lib" />
-    <Library Include="FMod\lib\x64\fmod_vc.lib" />
+    <Library Include="FMod\lib\x64lib\fmodL_vc.lib" />
+    <Library Include="FMod\lib\x64lib\fmod_vc.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

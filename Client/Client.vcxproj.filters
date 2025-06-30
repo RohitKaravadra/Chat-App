@@ -131,13 +131,13 @@
     <None Include="FMod\inc\fmod.cs" />
     <None Include="FMod\inc\fmod_dsp.cs" />
     <None Include="FMod\inc\fmod_errors.cs" />
-    <None Include="FMod\lib\x64\fmod.dll" />
-    <None Include="FMod\lib\x64\fmodL.dll" />
+    <None Include="FMod\lib\x64lib\fmod.dll" />
+    <None Include="FMod\lib\x64lib\fmodL.dll" />
     <None Include="fmod.dll" />
     <None Include="fmodL.dll" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="FMod\lib\x64\fmod_vc.lib" />
-    <Library Include="FMod\lib\x64\fmodL_vc.lib" />
+    <Library Include="FMod\lib\x64lib\fmod_vc.lib" />
+    <Library Include="FMod\lib\x64lib\fmodL_vc.lib" />
   </ItemGroup>
 </Project>
